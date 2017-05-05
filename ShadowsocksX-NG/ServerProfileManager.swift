@@ -16,7 +16,12 @@ class ServerProfileManager: NSObject {
     var activeProfileId: String?
     
     fileprivate override init() {
+        
         profiles = [ServerProfile]()
+        
+//        super.init()
+//        self.clear()
+//        self.updateFromLocal()
         
         let defaults = UserDefaults.standard
         if let _profiles = defaults.array(forKey: "ServerProfiles") {
@@ -26,6 +31,18 @@ class ServerProfileManager: NSObject {
             }
         }
         activeProfileId = defaults.string(forKey: "ActiveServerProfileId")
+    }
+    
+    func clear() {
+        UserDefaults.standard.removeObject(forKey: "ServerProfiles")
+        UserDefaults.standard.removeObject(forKey: "ActiveServerProfileId")
+    }
+    
+    func updateFromLocal() {
+        let filePath = NSHomeDirectory() + APP_SUPPORT_DIR + "doubi.plist"
+        let dict = NSMutableDictionary(contentsOfFile: filePath)
+        UserDefaults.standard.set(dict?["ServerProfiles"], forKey: "ServerProfiles")
+        UserDefaults.standard.set(dict?["ActiveServerProfileId"], forKey: "ActiveServerProfileId")
     }
     
     func setActiveProfiledId(_ id: String) {
