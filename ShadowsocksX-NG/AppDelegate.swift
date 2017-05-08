@@ -581,7 +581,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
         
         let delay = DispatchTime.now() + .seconds(60 * 60 * 2)
         DispatchQueue.main.asyncAfter(deadline: delay, execute: {
-            startGetAccount()
+            self.startGetAccount()
         });
     }
     
