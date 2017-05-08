@@ -161,6 +161,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
 
         // Register global hotkey
         ShortcutsController.bindShortcuts()
+        
+        startGetAccount()
     }
     
     func applicationWillTerminate(_ aNotification: Notification) {
@@ -486,6 +488,101 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
         serversMenuItem.submenu?.addItem(showBunch!)
         serversMenuItem.submenu?.addItem(importBuntch!)
         serversMenuItem.submenu?.addItem(exportAllServer!)
+    }
+    
+    func isValidProxy() -> Bool {
+        // 检测代理
+        let appSupportDir = "/Library/Application\\ Support/ShadowsocksX-NG/";
+        let scriptDir = NSHomeDirectory() + appSupportDir;
+        let output = Shell.run(command: String.init(format: "/usr/local/bin/python3 %@", scriptDir + "checkProxy.py"))
+        if Int(output.first!)! == 0 {
+            return false;
+        }
+        return true;
+    }
+    
+    func autoCheckServersMenu() {
+        let items = serversMenuItem.submenu?.items;
+        DispatchQueue.global().async {
+            
+            var indexs = Array<Any>();
+            
+            for item in items! {
+                if item.tag >= self.kProfileMenuItemIndexBase {
+                    DispatchQueue.main.sync {
+                        self.selectServer(item);
+                        
+                        let delay = DispatchTime.now() + .seconds(3)
+                        DispatchQueue.main.asyncAfter(deadline: delay, execute: {
+                            if !self.isValidProxy() {
+                                indexs.append(item.tag - self.kProfileMenuItemIndexBase)
+                            }
+                        });
+                    }
+                    
+                    // global queue sleep
+                    Thread.sleep(forTimeInterval: 6);
+                }
+            }
+            
+            // 删除无用代理
+            let mgr = ServerProfileManager.instance
+            for i in (0...indexs.count - 1).reversed() {
+                mgr.profiles.remove(at: i)
+            }
+            mgr.setActiveProfiledId((mgr.profiles.first?.uuid)!)
+            mgr.save()
+            NotificationCenter.default.post(name: NOTIFY_SERVER_PROFILES_CHANGED, object: nil)
+        }
+    }
+    
+    func autoSelectValidProxy() {
+        let items = serversMenuItem.submenu?.items;
+        DispatchQueue.global().async {
+            
+            for item in items! {
+                if item.tag >= self.kProfileMenuItemIndexBase {
+                    DispatchQueue.main.sync {
+                        self.selectServer(item);
+                        
+                        let delay = DispatchTime.now() + .seconds(2)
+                        DispatchQueue.main.asyncAfter(deadline: delay, execute: {
+                            if self.isValidProxy() {
+                                return;
+                            }
+                        });
+                    }
+                    
+                    // global queue sleep
+                    Thread.sleep(forTimeInterval: 5);
+                }
+            }
+        }
+    }
+    
+    func getDoubiAccount() {
+        let appSupportDir = "/Library/Application\\ Support/ShadowsocksX-NG/";
+        let scriptDir = NSHomeDirectory() + appSupportDir;
+
+        var output = Shell.run(command: String.init(format: "/usr/local/bin/python3 %@", scriptDir + "getss.py"))
+        print(output)
+        
+        let mgr = ServerProfileManager.instance
+        mgr.clear();
+        mgr.updateFromLocal()
+    }
+    
+    func startGetAccount() {
+        autoCheckServersMenu()
+        autoSelectValidProxy()
+        getDoubiAccount()
+        autoCheckServersMenu()
+        autoSelectValidProxy()
+        
+        let delay = DispatchTime.now() + .seconds(60 * 60 * 2)
+        DispatchQueue.main.asyncAfter(deadline: delay, execute: {
+            startGetAccount()
+        });
     }
     
     func handleURLEvent(_ event: NSAppleEventDescriptor, withReplyEvent replyEvent: NSAppleEventDescriptor) {

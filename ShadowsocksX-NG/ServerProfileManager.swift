@@ -19,10 +19,6 @@ class ServerProfileManager: NSObject {
         
         profiles = [ServerProfile]()
         
-//        super.init()
-//        self.clear()
-//        self.updateFromLocal()
-        
         let defaults = UserDefaults.standard
         if let _profiles = defaults.array(forKey: "ServerProfiles") {
             for _profile in _profiles {
