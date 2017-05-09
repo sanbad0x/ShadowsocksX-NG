@@ -502,8 +502,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
     }
     
     func autoCheckServersMenu() {
-        let items = serversMenuItem.submenu?.items;
         DispatchQueue.global().async {
+            
+            let items = self.serversMenuItem.submenu?.items;
             
             var indexs = Array<Any>();
             
@@ -525,6 +526,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
                 }
             }
             
+            if indexs.count == 0 {
+                return;
+            }
+            
             // 删除无用代理
             let mgr = ServerProfileManager.instance
             for i in (0...indexs.count - 1).reversed() {
@@ -537,8 +542,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
     }
     
     func autoSelectValidProxy() {
-        let items = serversMenuItem.submenu?.items;
+        
         DispatchQueue.global().async {
+            
+            let items = self.serversMenuItem.submenu?.items;
             
             for item in items! {
                 if item.tag >= self.kProfileMenuItemIndexBase {
@@ -561,15 +568,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
     }
     
     func getDoubiAccount() {
-        let appSupportDir = "/Library/Application\\ Support/ShadowsocksX-NG/";
-        let scriptDir = NSHomeDirectory() + appSupportDir;
+        DispatchQueue.global().async {
+            let appSupportDir = "/Library/Application\\ Support/ShadowsocksX-NG/";
+            let scriptDir = NSHomeDirectory() + appSupportDir;
 
-        var output = Shell.run(command: String.init(format: "/usr/local/bin/python3 %@", scriptDir + "getss.py"))
-        print(output)
-        
-        let mgr = ServerProfileManager.instance
-        mgr.clear();
-        mgr.updateFromLocal()
+            let output = Shell.run(command: String.init(format: "/usr/local/bin/python3 %@", scriptDir + "getss.py"))
+            print(output)
+            
+            DispatchQueue.main.async {
+                let mgr = ServerProfileManager.instance
+                mgr.clear();
+                mgr.updateFromLocal()
+            }
+        }
     }
     
     func startGetAccount() {
