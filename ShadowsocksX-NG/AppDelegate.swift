@@ -161,8 +161,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
 
         // Register global hotkey
         ShortcutsController.bindShortcuts()
-        
-        startGetAccount()
     }
     
     func applicationWillTerminate(_ aNotification: Notification) {
@@ -538,6 +536,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
             mgr.setActiveProfiledId((mgr.profiles.first?.uuid)!)
             mgr.save()
             NotificationCenter.default.post(name: NOTIFY_SERVER_PROFILES_CHANGED, object: nil)
+            
+            self.autoSelectValidProxy()
         }
     }
     
@@ -575,25 +575,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
             let output = Shell.run(command: String.init(format: "/usr/local/bin/python3 %@", scriptDir + "getss.py"))
             print(output)
             
-            DispatchQueue.main.async {
+            DispatchQueue.main.sync {
                 let mgr = ServerProfileManager.instance
                 mgr.clear();
                 mgr.updateFromLocal()
+                
+                mgr.save()
+                NotificationCenter.default.post(name: NOTIFY_SERVER_PROFILES_CHANGED, object: nil)
             }
+            
+//            self.autoCheckServersMenu()
         }
     }
     
     func startGetAccount() {
-        autoCheckServersMenu()
-        autoSelectValidProxy()
-        getDoubiAccount()
-        autoCheckServersMenu()
-        autoSelectValidProxy()
-        
-        let delay = DispatchTime.now() + .seconds(60 * 60 * 2)
-        DispatchQueue.main.asyncAfter(deadline: delay, execute: {
-            self.startGetAccount()
-        });
+        if isValidProxy() {
+            getDoubiAccount()
+        }
     }
     
     func handleURLEvent(_ event: NSAppleEventDescriptor, withReplyEvent replyEvent: NSAppleEventDescriptor) {
@@ -673,6 +671,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSUserNotificationCenterDele
         //NSApp.activate(ignoringOtherApps: true)
         //toastWindowCtrl.window?.makeKeyAndOrderFront(self)
         toastWindowCtrl.fadeInHud()
+    }
+    
+    @IBAction func updateAccountFromDoubi(_ sender: Any) {
+        startGetAccount();
     }
 }
 
